@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
  * 认证控制器
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @CrossOrigin
 public class AuthController {
 

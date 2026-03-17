@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
  * 用户设置控制器
  */
 @RestController
-@RequestMapping("/api/settings")
+@RequestMapping("/settings")
 @CrossOrigin
 public class UserSettingsController {
 

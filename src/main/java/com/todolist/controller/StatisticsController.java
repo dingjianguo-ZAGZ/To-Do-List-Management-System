@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
  * 统计控制器
  */
 @RestController
-@RequestMapping("/api/statistics")
+@RequestMapping("/statistics")
 @CrossOrigin
 public class StatisticsController {
 

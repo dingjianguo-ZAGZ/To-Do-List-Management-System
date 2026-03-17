@@ -14,7 +14,7 @@ import java.util.List;
  * 待办事项控制器
  */
 @RestController
-@RequestMapping("/api/todos")
+@RequestMapping("/todos")
 @CrossOrigin
 public class TodoItemController {
 

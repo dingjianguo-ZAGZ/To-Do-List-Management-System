@@ -15,7 +15,7 @@ import java.util.List;
  * 文件夹控制器
  */
 @RestController
-@RequestMapping("/api/folders")
+@RequestMapping("/folders")
 @CrossOrigin
 public class FolderController {
 

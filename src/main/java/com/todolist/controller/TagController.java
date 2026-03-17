@@ -15,7 +15,7 @@ import java.util.List;
  * 标签控制器
  */
 @RestController
-@RequestMapping("/api/tags")
+@RequestMapping("/tags")
 @CrossOrigin
 public class TagController {
 
