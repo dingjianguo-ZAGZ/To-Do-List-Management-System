@@ -3,7 +3,7 @@ package com.todolist.entity;
 import com.todolist.enums.Priority;
 import com.todolist.enums.RepeatCycle;
 import com.todolist.enums.TodoStatus;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -105,21 +105,21 @@ public class TodoItem {
      * 计算下次重复日期
      */
     private void calculateNextRepeatDate() {
-        LocalDateTime base = this.nextRepeatDate != null ? this.nextRepeatDate : LocalDateTime.now();
-
-        switch (this.repeatCycle) {
-            case DAILY -> this.nextRepeatDate = base.plusDays(1);
-            case WEEKLY -> this.nextRepeatDate = base.plusWeeks(1);
-            case MONTHLY -> this.nextRepeatDate = base.plusMonths(1);
-            case YEARLY -> this.nextRepeatDate = base.plusYears(1);
-            case WORKDAY -> {
-                LocalDateTime next = base.plusDays(1);
-                while (next.getDayOfWeek().getValue() >= 6) {
-                    next = next.plusDays(1);
-                }
-                this.nextRepeatDate = next;
-            }
-        }
+//        LocalDateTime base = this.nextRepeatDate != null ? this.nextRepeatDate : LocalDateTime.now();
+//
+//        switch (this.repeatCycle) {
+//            case DAILY -> this.nextRepeatDate = base.plusDays(1);
+//            case WEEKLY -> this.nextRepeatDate = base.plusWeeks(1);
+//            case MONTHLY -> this.nextRepeatDate = base.plusMonths(1);
+//            case YEARLY -> this.nextRepeatDate = base.plusYears(1);
+//            case WORKDAY -> {
+//                LocalDateTime next = base.plusDays(1);
+//                while (next.getDayOfWeek().getValue() >= 6) {
+//                    next = next.plusDays(1);
+//                }
+//                this.nextRepeatDate = next;
+//            }
+//        }
     }
 
     /**

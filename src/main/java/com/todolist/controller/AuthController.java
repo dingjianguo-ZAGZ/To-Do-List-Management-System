@@ -4,7 +4,7 @@ import com.todolist.dto.ApiResponse;
 import com.todolist.dto.UserLoginDTO;
 import com.todolist.dto.UserRegisterDTO;
 import com.todolist.service.UserService;
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

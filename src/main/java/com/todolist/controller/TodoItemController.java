@@ -4,7 +4,7 @@ import com.todolist.dto.*;
 import com.todolist.enums.TodoStatus;
 import com.todolist.service.TodoItemService;
 import com.todolist.util.JwtUtil;
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

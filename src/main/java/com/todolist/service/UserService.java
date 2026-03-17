@@ -67,7 +67,6 @@ public class UserService implements UserDetailsService {
         user.setPhone(registerDTO.getPhone());
         user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
         user.setIsActive(true);
-        user.setTwoFactorEnabled(false);
 
         user = userRepository.save(user);
 
@@ -80,8 +79,6 @@ public class UserService implements UserDetailsService {
 
     public String login(UserLoginDTO loginDTO) {
         User user = userRepository.findByUsername(loginDTO.getUsername())
-                .or(() -> userRepository.findByEmail(loginDTO.getUsername()))
-                .or(() -> userRepository.findByPhone(loginDTO.getUsername()))
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
         if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
@@ -90,12 +87,6 @@ public class UserService implements UserDetailsService {
 
         if (!user.getIsActive()) {
             throw new RuntimeException("账户已被禁用");
-        }
-
-        if (user.getTwoFactorEnabled()) {
-            if (loginDTO.getVerificationCode() == null) {
-                throw new RuntimeException("需要两步验证码");
-            }
         }
 
         return jwtUtil.generateToken(user.getUsername(), user.getId());

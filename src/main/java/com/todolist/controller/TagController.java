@@ -5,7 +5,7 @@ import com.todolist.dto.TagCreateDTO;
 import com.todolist.dto.TagResponseDTO;
 import com.todolist.service.TagService;
 import com.todolist.util.JwtUtil;
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

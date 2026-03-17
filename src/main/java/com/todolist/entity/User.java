@@ -1,6 +1,6 @@
 package com.todolist.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,12 +36,6 @@ public class User {
 
     @Column(nullable = false)
     private String password;
-
-    @Column(name = "two_factor_enabled")
-    private Boolean twoFactorEnabled = false;
-
-    @Column(name = "two_factor_secret")
-    private String twoFactorSecret;
 
     @Column(name = "is_active")
     private Boolean isActive = true;

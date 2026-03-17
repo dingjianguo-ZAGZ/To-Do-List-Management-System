@@ -1,7 +1,7 @@
 package com.todolist.entity;
 
 import com.todolist.enums.ReminderType;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
  * 提醒实体
  */
 @Entity
-@Table(name = "reminders")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
