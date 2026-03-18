@@ -1,16 +1,17 @@
 package com.todolist.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.todolist.dto.StatisticsResponseDTO;
 import com.todolist.entity.Statistics;
-import com.todolist.entity.User;
+import com.todolist.entity.TodoItem;
 import com.todolist.enums.TodoStatus;
 import com.todolist.repository.StatisticsRepository;
 import com.todolist.repository.TodoItemRepository;
-import com.todolist.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,26 +29,39 @@ public class StatisticsService {
     @Autowired
     private TodoItemRepository todoItemRepository;
 
-    @Autowired
-    private UserRepository userRepository;
-
     public StatisticsResponseDTO getStatistics(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-
         StatisticsResponseDTO dto = new StatisticsResponseDTO();
 
-        Long todayCompleted = todoItemRepository.countTodayCompleted(user);
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime todayEnd = todayStart.plusDays(1);
+        Long todayCompleted = todoItemRepository.selectCount(new LambdaQueryWrapper<TodoItem>()
+                .eq(TodoItem::getUserId, userId)
+                .eq(TodoItem::getStatus, TodoStatus.COMPLETED)
+                .between(TodoItem::getCompletedAt, todayStart, todayEnd));
         dto.setTodayCompleted(todayCompleted.intValue());
 
-        Long weekCompleted = todoItemRepository.countWeekCompleted(user);
+        LocalDateTime weekStart = LocalDate.now().minusDays(7).atStartOfDay();
+        Long weekCompleted = todoItemRepository.selectCount(new LambdaQueryWrapper<TodoItem>()
+                .eq(TodoItem::getUserId, userId)
+                .eq(TodoItem::getStatus, TodoStatus.COMPLETED)
+                .ge(TodoItem::getCompletedAt, weekStart));
         dto.setWeekCompleted(weekCompleted.intValue());
 
-        List<Statistics> last7Days = statisticsRepository.findByUserAndDateRange(
-                user,
-                LocalDate.now().minusDays(7),
-                LocalDate.now()
-        );
+        Long overdueCount = todoItemRepository.selectCount(new LambdaQueryWrapper<TodoItem>()
+                .eq(TodoItem::getUserId, userId)
+                .ne(TodoItem::getStatus, TodoStatus.COMPLETED)
+                .lt(TodoItem::getDueDate, LocalDateTime.now()));
+        dto.setTodayOverdue(overdueCount.intValue());
+
+        Long pendingCount = todoItemRepository.selectCount(new LambdaQueryWrapper<TodoItem>()
+                .eq(TodoItem::getUserId, userId)
+                .ne(TodoItem::getStatus, TodoStatus.COMPLETED));
+        dto.setTotalPending(pendingCount.intValue());
+
+        List<Statistics> last7Days = statisticsRepository.selectList(new LambdaQueryWrapper<Statistics>()
+                .eq(Statistics::getUserId, userId)
+                .between(Statistics::getStatDate, LocalDate.now().minusDays(7), LocalDate.now())
+                .orderByAsc(Statistics::getStatDate));
 
         Map<LocalDate, Integer> completionTrend = last7Days.stream()
                 .collect(Collectors.toMap(
@@ -63,19 +77,19 @@ public class StatisticsService {
     }
 
     public void updateDailyStatistics(Long userId, LocalDate date) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        Statistics statistics = statisticsRepository.selectOne(new LambdaQueryWrapper<Statistics>()
+                .eq(Statistics::getUserId, userId)
+                .eq(Statistics::getStatDate, date));
 
-        Statistics statistics = statisticsRepository
-                .findByUserAndStatDate(user, date)
-                .orElseGet(() -> {
-                    Statistics newStats = new Statistics();
-                    newStats.setUser(user);
-                    newStats.setStatDate(date);
-                    return newStats;
-                });
-
-        statistics.setCompletedCount(statistics.getCompletedCount() + 1);
-        statisticsRepository.save(statistics);
+        if (statistics == null) {
+            statistics = new Statistics();
+            statistics.setUserId(userId);
+            statistics.setStatDate(date);
+            statistics.setCompletedCount(1);
+            statisticsRepository.insert(statistics);
+        } else {
+            statistics.setCompletedCount(statistics.getCompletedCount() + 1);
+            statisticsRepository.updateById(statistics);
+        }
     }
 }

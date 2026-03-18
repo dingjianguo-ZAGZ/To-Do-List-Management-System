@@ -1,9 +1,8 @@
 package com.todolist.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.todolist.dto.UserSettingsDTO;
-import com.todolist.entity.User;
 import com.todolist.entity.UserSettings;
-import com.todolist.repository.UserRepository;
 import com.todolist.repository.UserSettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,30 +17,27 @@ public class UserSettingsService {
     @Autowired
     private UserSettingsRepository userSettingsRepository;
 
-    @Autowired
-    private UserRepository userRepository;
-
     public UserSettingsDTO getUserSettings(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        UserSettings settings = userSettingsRepository.selectOne(new LambdaQueryWrapper<UserSettings>()
+                .eq(UserSettings::getUserId, userId));
 
-        UserSettings settings = userSettingsRepository.findByUser(user)
-                .orElseGet(() -> {
-                    UserSettings newSettings = new UserSettings();
-                    newSettings.setUser(user);
-                    return userSettingsRepository.save(newSettings);
-                });
+        if (settings == null) {
+            settings = new UserSettings();
+            settings.setUserId(userId);
+            userSettingsRepository.insert(settings);
+        }
 
         return convertToDTO(settings);
     }
 
     @Transactional
     public UserSettingsDTO updateUserSettings(Long userId, UserSettingsDTO settingsDTO) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        UserSettings settings = userSettingsRepository.selectOne(new LambdaQueryWrapper<UserSettings>()
+                .eq(UserSettings::getUserId, userId));
 
-        UserSettings settings = userSettingsRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("用户设置不存在"));
+        if (settings == null) {
+            throw new RuntimeException("用户设置不存在");
+        }
 
         if (settingsDTO.getTheme() != null) {
             settings.setTheme(settingsDTO.getTheme());
@@ -68,7 +64,7 @@ public class UserSettingsService {
             settings.setReminderWorkDaysOnly(settingsDTO.getReminderWorkDaysOnly());
         }
 
-        settings = userSettingsRepository.save(settings);
+        userSettingsRepository.updateById(settings);
         return convertToDTO(settings);
     }
 

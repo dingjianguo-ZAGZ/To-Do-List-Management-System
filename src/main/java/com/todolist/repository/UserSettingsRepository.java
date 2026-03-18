@@ -1,17 +1,12 @@
 package com.todolist.repository;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.todolist.entity.UserSettings;
-import com.todolist.entity.User;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
  * 用户设置数据访问层
  */
-@Repository
-public interface UserSettingsRepository extends JpaRepository<UserSettings, Long> {
-
-    Optional<UserSettings> findByUser(User user);
+@Mapper
+public interface UserSettingsRepository extends BaseMapper<UserSettings> {
 }

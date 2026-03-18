@@ -8,7 +8,6 @@ spring:
     username: todolist
     password: Todolist_suhongrun
     driver-class-name: com.mysql.cj.jdbc.Driver
-    # 连接池配置
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -16,27 +15,10 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
-  # JPA/Hibernate配置
-  jpa:
-    hibernate:
-      ddl-auto: update  # 生产环境建议改为 validate
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        format_sql: true
-        use_sql_comments: true
-        jdbc:
-          batch_size: 20
-        order_inserts: true
-        order_updates: true
-
-  # Redis配置（可选，用于缓存和会话管理）
+  # Redis配置
   redis:
     port: 6379
-    password:  # 如果Redis没有设置密码，保持为空
+    password:
     database: 0
     timeout: 3000ms
     lettuce:
@@ -45,13 +27,16 @@ spring:
         max-wait: -1ms
         max-idle: 8
         min-idle: 0
+  data:
+    redis:
+      host: localhost
 
-  # 邮件配置（用于发送提醒通知）
+  # 邮件配置
   mail:
     host: smtp.gmail.com
     port: 587
-    username: your-email@gmail.com  # 请修改为您的邮箱
-    password: your-email-password   # 请修改为您的邮箱密码或应用专用密码
+    username: your-email@gmail.com
+    password: your-email-password
     properties:
       mail:
         smtp:
@@ -68,9 +53,17 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
-  data:
-    redis:
-      host: localhost
+
+# MyBatis-Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.todolist.entity
 
 server:
   port: 8080
@@ -83,16 +76,18 @@ server:
 
 # JWT配置
 jwt:
-  secret: suhongrun18834274658  # 生产环境请使用更安全的密钥
-  expiration: 86400000 # 24小时 (毫秒)
+  secret: ShtESNZGB90JwXfNHfoeGpx8eH/h7EvLnRa4U9xYkrg=
+  expiration: 86400000
 
 # 应用自定义配置
 app:
+  upload:
+    avatar-dir: uploads/avatars
+    avatar-url-prefix: /uploads/avatars
   backup:
     auto-enabled: true
-    schedule: "0 0 2 * * ?" # 每天凌晨2点自动备份
+    schedule: "0 0 2 * * ?"
     path: ./backups
-
   reminder:
     work-hours-start: 9
     work-hours-end: 18
@@ -103,8 +98,6 @@ logging:
   level:
     root: INFO
     com.todolist: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
   file:

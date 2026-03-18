@@ -1,5 +1,6 @@
 package com.todolist.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.todolist.dto.*;
 import com.todolist.entity.*;
 import com.todolist.enums.TodoStatus;
@@ -24,9 +25,6 @@ public class TodoItemService {
     private TodoItemRepository todoItemRepository;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private TagRepository tagRepository;
 
     @Autowired
@@ -35,11 +33,11 @@ public class TodoItemService {
     @Autowired
     private ReminderRepository reminderRepository;
 
+    @Autowired
+    private TodoTagsMapper todoTagsMapper;
+
     @Transactional
     public TodoItemResponseDTO createTodoItem(Long userId, TodoItemCreateDTO createDTO) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-
         TodoItem todoItem = new TodoItem();
         todoItem.setTitle(createDTO.getTitle());
         todoItem.setDescription(createDTO.getDescription());
@@ -47,33 +45,35 @@ public class TodoItemService {
         todoItem.setDueDate(createDTO.getDueDate());
         todoItem.setRepeatCycle(createDTO.getRepeatCycle());
         todoItem.setStatus(TodoStatus.NOT_STARTED);
-        todoItem.setUser(user);
+        todoItem.setUserId(userId);
 
         if (createDTO.getFolderId() != null) {
-            Folder folder = folderRepository.findById(createDTO.getFolderId())
-                    .orElseThrow(() -> new RuntimeException("文件夹不存在"));
-            todoItem.setFolder(folder);
+            Folder folder = folderRepository.selectById(createDTO.getFolderId());
+            if (folder == null) {
+                throw new RuntimeException("文件夹不存在");
+            }
+            todoItem.setFolderId(createDTO.getFolderId());
         }
+
+        todoItemRepository.insert(todoItem);
 
         if (createDTO.getTagIds() != null && !createDTO.getTagIds().isEmpty()) {
-            Set<Tag> tags = new HashSet<>();
             for (Long tagId : createDTO.getTagIds()) {
-                Tag tag = tagRepository.findById(tagId)
-                        .orElseThrow(() -> new RuntimeException("标签不存在"));
-                tags.add(tag);
+                Tag tag = tagRepository.selectById(tagId);
+                if (tag == null) {
+                    throw new RuntimeException("标签不存在");
+                }
+                todoTagsMapper.insertTodoTag(todoItem.getId(), tagId);
             }
-            todoItem.setTags(tags);
         }
-
-        todoItem = todoItemRepository.save(todoItem);
 
         if (createDTO.getReminders() != null && !createDTO.getReminders().isEmpty()) {
             for (ReminderCreateDTO reminderDTO : createDTO.getReminders()) {
                 Reminder reminder = new Reminder();
                 reminder.setType(reminderDTO.getType());
                 reminder.setRemindAt(reminderDTO.getRemindAt());
-                reminder.setTodoItem(todoItem);
-                reminderRepository.save(reminder);
+                reminder.setTodoId(todoItem.getId());
+                reminderRepository.insert(reminder);
             }
         }
 
@@ -82,10 +82,12 @@ public class TodoItemService {
 
     @Transactional
     public TodoItemResponseDTO updateTodoItem(Long userId, Long todoId, TodoItemUpdateDTO updateDTO) {
-        TodoItem todoItem = todoItemRepository.findById(todoId)
-                .orElseThrow(() -> new RuntimeException("事项不存在"));
+        TodoItem todoItem = todoItemRepository.selectById(todoId);
+        if (todoItem == null) {
+            throw new RuntimeException("事项不存在");
+        }
 
-        if (!todoItem.getUser().getId().equals(userId)) {
+        if (!todoItem.getUserId().equals(userId)) {
             throw new RuntimeException("无权限操作");
         }
 
@@ -109,57 +111,69 @@ public class TodoItemService {
         }
 
         if (updateDTO.getFolderId() != null) {
-            Folder folder = folderRepository.findById(updateDTO.getFolderId())
-                    .orElseThrow(() -> new RuntimeException("文件夹不存在"));
-            todoItem.setFolder(folder);
+            Folder folder = folderRepository.selectById(updateDTO.getFolderId());
+            if (folder == null) {
+                throw new RuntimeException("文件夹不存在");
+            }
+            todoItem.setFolderId(updateDTO.getFolderId());
         }
 
         if (updateDTO.getTagIds() != null) {
-            Set<Tag> tags = new HashSet<>();
+            todoTagsMapper.deleteByTodoId(todoId);
             for (Long tagId : updateDTO.getTagIds()) {
-                Tag tag = tagRepository.findById(tagId)
-                        .orElseThrow(() -> new RuntimeException("标签不存在"));
-                tags.add(tag);
+                Tag tag = tagRepository.selectById(tagId);
+                if (tag == null) {
+                    throw new RuntimeException("标签不存在");
+                }
+                todoTagsMapper.insertTodoTag(todoId, tagId);
             }
-            todoItem.setTags(tags);
         }
 
-        todoItem = todoItemRepository.save(todoItem);
+        todoItemRepository.updateById(todoItem);
         return convertToResponseDTO(todoItem);
     }
 
     @Transactional
     public void deleteTodoItem(Long userId, Long todoId) {
-        TodoItem todoItem = todoItemRepository.findById(todoId)
-                .orElseThrow(() -> new RuntimeException("事项不存在"));
+        TodoItem todoItem = todoItemRepository.selectById(todoId);
+        if (todoItem == null) {
+            throw new RuntimeException("事项不存在");
+        }
 
-        if (!todoItem.getUser().getId().equals(userId)) {
+        if (!todoItem.getUserId().equals(userId)) {
             throw new RuntimeException("无权限操作");
         }
 
-        todoItemRepository.delete(todoItem);
+        todoTagsMapper.deleteByTodoId(todoId);
+        reminderRepository.delete(new LambdaQueryWrapper<Reminder>()
+                .eq(Reminder::getTodoId, todoId));
+        todoItemRepository.deleteById(todoId);
     }
 
     @Transactional
     public TodoItemResponseDTO completeTodoItem(Long userId, Long todoId, String completionNote) {
-        TodoItem todoItem = todoItemRepository.findById(todoId)
-                .orElseThrow(() -> new RuntimeException("事项不存在"));
+        TodoItem todoItem = todoItemRepository.selectById(todoId);
+        if (todoItem == null) {
+            throw new RuntimeException("事项不存在");
+        }
 
-        if (!todoItem.getUser().getId().equals(userId)) {
+        if (!todoItem.getUserId().equals(userId)) {
             throw new RuntimeException("无权限操作");
         }
 
         todoItem.complete(completionNote);
-        todoItem = todoItemRepository.save(todoItem);
+        todoItemRepository.updateById(todoItem);
 
         return convertToResponseDTO(todoItem);
     }
 
     public TodoItemResponseDTO getTodoItem(Long userId, Long todoId) {
-        TodoItem todoItem = todoItemRepository.findById(todoId)
-                .orElseThrow(() -> new RuntimeException("事项不存在"));
+        TodoItem todoItem = todoItemRepository.selectById(todoId);
+        if (todoItem == null) {
+            throw new RuntimeException("事项不存在");
+        }
 
-        if (!todoItem.getUser().getId().equals(userId)) {
+        if (!todoItem.getUserId().equals(userId)) {
             throw new RuntimeException("无权限操作");
         }
 
@@ -167,30 +181,27 @@ public class TodoItemService {
     }
 
     public List<TodoItemResponseDTO> getAllTodoItems(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-
-        List<TodoItem> todoItems = todoItemRepository.findByUser(user);
+        List<TodoItem> todoItems = todoItemRepository.selectList(new LambdaQueryWrapper<TodoItem>()
+                .eq(TodoItem::getUserId, userId));
         return todoItems.stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
 
     public List<TodoItemResponseDTO> getTodoItemsByStatus(Long userId, TodoStatus status) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-
-        List<TodoItem> todoItems = todoItemRepository.findByUserAndStatus(user, status);
+        List<TodoItem> todoItems = todoItemRepository.selectList(new LambdaQueryWrapper<TodoItem>()
+                .eq(TodoItem::getUserId, userId)
+                .eq(TodoItem::getStatus, status));
         return todoItems.stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
 
     public List<TodoItemResponseDTO> getOverdueTodoItems(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-
-        List<TodoItem> todoItems = todoItemRepository.findOverdueItems(user, LocalDateTime.now());
+        List<TodoItem> todoItems = todoItemRepository.selectList(new LambdaQueryWrapper<TodoItem>()
+                .eq(TodoItem::getUserId, userId)
+                .ne(TodoItem::getStatus, TodoStatus.COMPLETED)
+                .lt(TodoItem::getDueDate, LocalDateTime.now()));
         return todoItems.stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
@@ -212,21 +223,45 @@ public class TodoItemService {
         dto.setUpdatedAt(todoItem.getUpdatedAt());
         dto.setIsOverdue(todoItem.isOverdue());
 
-        if (todoItem.getFolder() != null) {
-            dto.setFolderId(todoItem.getFolder().getId());
-            dto.setFolderName(todoItem.getFolder().getName());
+        if (todoItem.getFolderId() != null) {
+            Folder folder = folderRepository.selectById(todoItem.getFolderId());
+            if (folder != null) {
+                dto.setFolderId(folder.getId());
+                dto.setFolderName(folder.getName());
+            }
         }
 
-        Set<TagResponseDTO> tagDTOs = todoItem.getTags().stream()
-                .map(tag -> {
-                    TagResponseDTO tagDTO = new TagResponseDTO();
-                    tagDTO.setId(tag.getId());
-                    tagDTO.setName(tag.getName());
-                    tagDTO.setColor(tag.getColor());
-                    return tagDTO;
+        List<Long> tagIds = todoTagsMapper.selectTagIdsByTodoId(todoItem.getId());
+        Set<TagResponseDTO> tagDTOs = new HashSet<>();
+        for (Long tagId : tagIds) {
+            Tag tag = tagRepository.selectById(tagId);
+            if (tag != null) {
+                TagResponseDTO tagDTO = new TagResponseDTO();
+                tagDTO.setId(tag.getId());
+                tagDTO.setName(tag.getName());
+                tagDTO.setColor(tag.getColor());
+                tagDTOs.add(tagDTO);
+            }
+        }
+        dto.setTags(tagDTOs);
+
+        List<Reminder> reminders = reminderRepository.selectList(new LambdaQueryWrapper<Reminder>()
+                .eq(Reminder::getTodoId, todoItem.getId()));
+        Set<ReminderResponseDTO> reminderDTOs = reminders.stream()
+                .map(reminder -> {
+                    ReminderResponseDTO reminderDTO = new ReminderResponseDTO();
+                    reminderDTO.setId(reminder.getId());
+                    reminderDTO.setType(reminder.getType());
+                    reminderDTO.setRemindAt(reminder.getRemindAt());
+                    reminderDTO.setIsSent(reminder.getIsSent());
+                    reminderDTO.setSentAt(reminder.getSentAt());
+                    reminderDTO.setCreatedAt(reminder.getCreatedAt());
+                    return reminderDTO;
                 })
                 .collect(Collectors.toSet());
-        dto.setTags(tagDTOs);
+        dto.setReminders(reminderDTOs);
+
+        dto.setAttachments(new HashSet<>());
 
         return dto;
     }

@@ -1,45 +1,38 @@
 package com.todolist.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import com.todolist.enums.ReminderType;
-import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
 /**
  * 提醒实体
  */
-@Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@TableName("reminder")
 public class Reminder {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private ReminderType type;
 
-    @Column(name = "remind_at", nullable = false)
     private LocalDateTime remindAt;
 
-    @Column(name = "is_sent")
     private Boolean isSent = false;
 
-    @Column(name = "sent_at")
     private LocalDateTime sentAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "todo_id", nullable = false)
-    private TodoItem todoItem;
+    private Long todoId;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
+
+    @TableField(exist = false)
+    private TodoItem todoItem;
 }

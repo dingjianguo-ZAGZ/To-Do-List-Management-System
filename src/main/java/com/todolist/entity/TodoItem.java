@@ -1,14 +1,12 @@
 package com.todolist.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import com.todolist.enums.Priority;
 import com.todolist.enums.RepeatCycle;
 import com.todolist.enums.TodoStatus;
-import javax.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -17,76 +15,57 @@ import java.util.Set;
 /**
  * 待办事项实体
  */
-@Entity
-@Table(name = "todo_items")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@TableName("todo_items")
 public class TodoItem {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(nullable = false, length = 200)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private Priority priority = Priority.MEDIUM;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private TodoStatus status = TodoStatus.NOT_STARTED;
 
-    @Column(name = "due_date")
     private LocalDateTime dueDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "repeat_cycle")
     private RepeatCycle repeatCycle = RepeatCycle.NONE;
 
-    @Column(name = "next_repeat_date")
     private LocalDateTime nextRepeatDate;
 
-    @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    @Column(name = "completion_note", columnDefinition = "TEXT")
     private String completionNote;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Long userId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "folder_id")
-    private Folder folder;
+    private Long folderId;
 
-    @ManyToMany
-    @JoinTable(
-        name = "todo_tags",
-        joinColumns = @JoinColumn(name = "todo_id"),
-        inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    private Set<Tag> tags = new HashSet<>();
-
-    @OneToMany(mappedBy = "todoItem", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Attachment> attachments = new HashSet<>();
-
-    @OneToMany(mappedBy = "todoItem", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Reminder> reminders = new HashSet<>();
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+
+    @TableField(exist = false)
+    private User user;
+
+    @TableField(exist = false)
+    private Folder folder;
+
+    @TableField(exist = false)
+    private Set<Tag> tags = new HashSet<>();
+
+    @TableField(exist = false)
+    private Set<Attachment> attachments = new HashSet<>();
+
+    @TableField(exist = false)
+    private Set<Reminder> reminders = new HashSet<>();
 
     /**
      * 标记为完成

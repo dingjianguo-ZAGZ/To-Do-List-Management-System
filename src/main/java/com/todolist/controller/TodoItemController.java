@@ -3,7 +3,6 @@ package com.todolist.controller;
 import com.todolist.dto.*;
 import com.todolist.enums.TodoStatus;
 import com.todolist.service.TodoItemService;
-import com.todolist.util.JwtUtil;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -21,15 +20,11 @@ public class TodoItemController {
     @Autowired
     private TodoItemService todoItemService;
 
-    @Autowired
-    private JwtUtil jwtUtil;
-
     @PostMapping
     public ApiResponse<TodoItemResponseDTO> createTodoItem(
-            @RequestHeader("Authorization") String token,
+            @RequestAttribute("userId") Long userId,
             @Valid @RequestBody TodoItemCreateDTO createDTO) {
         try {
-            Long userId = jwtUtil.getUserIdFromToken(token.substring(7));
             TodoItemResponseDTO result = todoItemService.createTodoItem(userId, createDTO);
             return ApiResponse.success("创建成功", result);
         } catch (Exception e) {
@@ -39,11 +34,10 @@ public class TodoItemController {
 
     @PutMapping("/{todoId}")
     public ApiResponse<TodoItemResponseDTO> updateTodoItem(
-            @RequestHeader("Authorization") String token,
+            @RequestAttribute("userId") Long userId,
             @PathVariable Long todoId,
             @Valid @RequestBody TodoItemUpdateDTO updateDTO) {
         try {
-            Long userId = jwtUtil.getUserIdFromToken(token.substring(7));
             TodoItemResponseDTO result = todoItemService.updateTodoItem(userId, todoId, updateDTO);
             return ApiResponse.success("更新成功", result);
         } catch (Exception e) {
@@ -53,10 +47,9 @@ public class TodoItemController {
 
     @DeleteMapping("/{todoId}")
     public ApiResponse<Void> deleteTodoItem(
-            @RequestHeader("Authorization") String token,
+            @RequestAttribute("userId") Long userId,
             @PathVariable Long todoId) {
         try {
-            Long userId = jwtUtil.getUserIdFromToken(token.substring(7));
             todoItemService.deleteTodoItem(userId, todoId);
             return ApiResponse.success("删除成功", null);
         } catch (Exception e) {
@@ -66,11 +59,10 @@ public class TodoItemController {
 
     @PostMapping("/{todoId}/complete")
     public ApiResponse<TodoItemResponseDTO> completeTodoItem(
-            @RequestHeader("Authorization") String token,
+            @RequestAttribute("userId") Long userId,
             @PathVariable Long todoId,
             @RequestParam(required = false) String note) {
         try {
-            Long userId = jwtUtil.getUserIdFromToken(token.substring(7));
             TodoItemResponseDTO result = todoItemService.completeTodoItem(userId, todoId, note);
             return ApiResponse.success("标记完成", result);
         } catch (Exception e) {
@@ -80,10 +72,9 @@ public class TodoItemController {
 
     @GetMapping("/{todoId}")
     public ApiResponse<TodoItemResponseDTO> getTodoItem(
-            @RequestHeader("Authorization") String token,
+            @RequestAttribute("userId") Long userId,
             @PathVariable Long todoId) {
         try {
-            Long userId = jwtUtil.getUserIdFromToken(token.substring(7));
             TodoItemResponseDTO result = todoItemService.getTodoItem(userId, todoId);
             return ApiResponse.success(result);
         } catch (Exception e) {
@@ -93,9 +84,8 @@ public class TodoItemController {
 
     @GetMapping
     public ApiResponse<List<TodoItemResponseDTO>> getAllTodoItems(
-            @RequestHeader("Authorization") String token) {
+            @RequestAttribute("userId") Long userId) {
         try {
-            Long userId = jwtUtil.getUserIdFromToken(token.substring(7));
             List<TodoItemResponseDTO> result = todoItemService.getAllTodoItems(userId);
             return ApiResponse.success(result);
         } catch (Exception e) {
@@ -105,10 +95,9 @@ public class TodoItemController {
 
     @GetMapping("/status/{status}")
     public ApiResponse<List<TodoItemResponseDTO>> getTodoItemsByStatus(
-            @RequestHeader("Authorization") String token,
+            @RequestAttribute("userId") Long userId,
             @PathVariable TodoStatus status) {
         try {
-            Long userId = jwtUtil.getUserIdFromToken(token.substring(7));
             List<TodoItemResponseDTO> result = todoItemService.getTodoItemsByStatus(userId, status);
             return ApiResponse.success(result);
         } catch (Exception e) {
@@ -118,9 +107,8 @@ public class TodoItemController {
 
     @GetMapping("/overdue")
     public ApiResponse<List<TodoItemResponseDTO>> getOverdueTodoItems(
-            @RequestHeader("Authorization") String token) {
+            @RequestAttribute("userId") Long userId) {
         try {
-            Long userId = jwtUtil.getUserIdFromToken(token.substring(7));
             List<TodoItemResponseDTO> result = todoItemService.getOverdueTodoItems(userId);
             return ApiResponse.success(result);
         } catch (Exception e) {

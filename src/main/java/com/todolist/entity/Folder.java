@@ -1,11 +1,9 @@
 package com.todolist.entity;
 
-import javax.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -14,35 +12,30 @@ import java.util.Set;
 /**
  * 文件夹实体
  */
-@Entity
-@Table(name = "folders")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@TableName("folders")
 public class Folder {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Long userId;
 
-    @OneToMany(mappedBy = "folder", cascade = CascadeType.ALL)
-    private Set<TodoItem> todoItems = new HashSet<>();
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+
+    @TableField(exist = false)
+    private User user;
+
+    @TableField(exist = false)
+    private Set<TodoItem> todoItems = new HashSet<>();
 }

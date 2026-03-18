@@ -1,11 +1,12 @@
 package com.todolist.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.todolist.dto.FolderCreateDTO;
 import com.todolist.dto.FolderResponseDTO;
 import com.todolist.entity.Folder;
-import com.todolist.entity.User;
+import com.todolist.entity.TodoItem;
 import com.todolist.repository.FolderRepository;
-import com.todolist.repository.UserRepository;
+import com.todolist.repository.TodoItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,32 +24,34 @@ public class FolderService {
     private FolderRepository folderRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private TodoItemRepository todoItemRepository;
 
     @Transactional
     public FolderResponseDTO createFolder(Long userId, FolderCreateDTO createDTO) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-
-        if (folderRepository.existsByUserAndName(user, createDTO.getName())) {
+        Long count = folderRepository.selectCount(new LambdaQueryWrapper<Folder>()
+                .eq(Folder::getUserId, userId)
+                .eq(Folder::getName, createDTO.getName()));
+        if (count > 0) {
             throw new RuntimeException("文件夹名称已存在");
         }
 
         Folder folder = new Folder();
         folder.setName(createDTO.getName());
         folder.setDescription(createDTO.getDescription());
-        folder.setUser(user);
+        folder.setUserId(userId);
 
-        folder = folderRepository.save(folder);
+        folderRepository.insert(folder);
         return convertToResponseDTO(folder);
     }
 
     @Transactional
     public FolderResponseDTO updateFolder(Long userId, Long folderId, FolderCreateDTO updateDTO) {
-        Folder folder = folderRepository.findById(folderId)
-                .orElseThrow(() -> new RuntimeException("文件夹不存在"));
+        Folder folder = folderRepository.selectById(folderId);
+        if (folder == null) {
+            throw new RuntimeException("文件夹不存在");
+        }
 
-        if (!folder.getUser().getId().equals(userId)) {
+        if (!folder.getUserId().equals(userId)) {
             throw new RuntimeException("无权限操作");
         }
 
@@ -59,27 +62,27 @@ public class FolderService {
             folder.setDescription(updateDTO.getDescription());
         }
 
-        folder = folderRepository.save(folder);
+        folderRepository.updateById(folder);
         return convertToResponseDTO(folder);
     }
 
     @Transactional
     public void deleteFolder(Long userId, Long folderId) {
-        Folder folder = folderRepository.findById(folderId)
-                .orElseThrow(() -> new RuntimeException("文件夹不存在"));
+        Folder folder = folderRepository.selectById(folderId);
+        if (folder == null) {
+            throw new RuntimeException("文件夹不存在");
+        }
 
-        if (!folder.getUser().getId().equals(userId)) {
+        if (!folder.getUserId().equals(userId)) {
             throw new RuntimeException("无权限操作");
         }
 
-        folderRepository.delete(folder);
+        folderRepository.deleteById(folderId);
     }
 
     public List<FolderResponseDTO> getAllFolders(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-
-        List<Folder> folders = folderRepository.findByUser(user);
+        List<Folder> folders = folderRepository.selectList(new LambdaQueryWrapper<Folder>()
+                .eq(Folder::getUserId, userId));
         return folders.stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
@@ -90,7 +93,11 @@ public class FolderService {
         dto.setId(folder.getId());
         dto.setName(folder.getName());
         dto.setDescription(folder.getDescription());
-        dto.setTodoCount(folder.getTodoItems().size());
+
+        Long todoCount = todoItemRepository.selectCount(new LambdaQueryWrapper<TodoItem>()
+                .eq(TodoItem::getFolderId, folder.getId()));
+        dto.setTodoCount(todoCount.intValue());
+
         dto.setCreatedAt(folder.getCreatedAt());
         dto.setUpdatedAt(folder.getUpdatedAt());
         return dto;

@@ -1,17 +1,12 @@
 package com.todolist.repository;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.todolist.entity.Attachment;
-import com.todolist.entity.TodoItem;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
  * 附件数据访问层
  */
-@Repository
-public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
-
-    List<Attachment> findByTodoItem(TodoItem todoItem);
+@Mapper
+public interface AttachmentRepository extends BaseMapper<Attachment> {
 }

@@ -1,10 +1,9 @@
 package com.todolist.entity;
 
-import javax.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,34 +11,28 @@ import java.time.LocalDateTime;
 /**
  * 统计实体
  */
-@Entity
-@Table(name = "statistics")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@TableName("statistics")
 public class Statistics {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Long userId;
 
-    @Column(name = "stat_date", nullable = false)
     private LocalDate statDate;
 
-    @Column(name = "completed_count")
     private Integer completedCount = 0;
 
-    @Column(name = "overdue_count")
     private Integer overdueCount = 0;
 
-    @Column(name = "created_count")
     private Integer createdCount = 0;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
+
+    @TableField(exist = false)
+    private User user;
 }
